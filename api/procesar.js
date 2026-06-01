@@ -1,5 +1,5 @@
 import OpenAI    from 'openai';
-import { jwtVerify } from 'jose';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DATOS FIJOS DE LA INSTITUCIÓN
@@ -59,12 +59,12 @@ export default async function handler(req, res) {
   if (!token) {
     return res.status(401).json({ error: 'Sesión requerida. Por favor iniciá sesión.' });
   }
-  if (!process.env.SUPABASE_JWT_SECRET) {
-    return res.status(500).json({ error: 'Configuración del servidor incompleta (SUPABASE_JWT_SECRET)' });
+  if (!process.env.SUPABASE_URL) {
+    return res.status(500).json({ error: 'Configuración del servidor incompleta (SUPABASE_URL)' });
   }
   try {
-    const secret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
-    await jwtVerify(token, secret, { algorithms: ['HS256'] });
+    const JWKS = createRemoteJWKSet(new URL(`${process.env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`));
+    await jwtVerify(token, JWKS);
   } catch {
     return res.status(401).json({ error: 'Sesión inválida o expirada. Por favor iniciá sesión nuevamente.' });
   }

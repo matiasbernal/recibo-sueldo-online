@@ -1,0 +1,9 @@
+{
+  "name": "recibos-sueldo-online",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generador de recibos de sueldo y archivos ARCA/AFIP para A.C.D.P.S DYPS",
+  "dependencies": {
+    "openai": "^4.0.0"
+  }
+}

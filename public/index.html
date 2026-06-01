@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recibos de Sueldo — A.C.D.P.S DYPS</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   RESET Y VARIABLES
+═══════════════════════════════════════════════════════════════ */
+:root {
+  --azul:     #1a3a6b;
+  --azul2:    #2d5d9e;
+  --bg:       #f3f4f6;
+  --borde:    #d1d5db;
+  --verde:    #16a34a;
+  --rojo:     #dc2626;
+  --texto:    #1f2937;
+  --gris:     #6b7280;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--texto);
+  min-height: 100vh;
+  padding: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CABECERA DE LA APP
+═══════════════════════════════════════════════════════════════ */
+#app-header {
+  background: var(--azul);
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+}
+#app-header h1 { font-size: 1.15rem; font-weight: 700; }
+#app-header p  { font-size: 0.78rem; opacity: 0.82; margin-top: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   SECCIÓN UPLOAD
+═══════════════════════════════════════════════════════════════ */
+#upload-section { max-width: 940px; margin: 0 auto; }
+
+.api-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 14px;
+}
+.api-row label { font-size: 0.82rem; white-space: nowrap; font-weight: 600; }
+.api-row input {
+  flex: 1; padding: 7px 10px;
+  border: 1px solid var(--borde); border-radius: 5px;
+  font-size: 0.82rem; color: var(--texto);
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.slot {
+  background: #fff;
+  border: 2px dashed var(--borde);
+  border-radius: 8px;
+  padding: 16px 12px;
+  text-align: center;
+  transition: border-color .2s;
+}
+.slot.loaded { border-color: var(--verde); }
+.slot.error  { border-color: var(--rojo);  }
+
+.slot-label {
+  display: block;
+  font-size: 0.84rem; font-weight: 700;
+  color: var(--azul); margin-bottom: 10px;
+}
+.btn-upload {
+  display: inline-block;
+  background: var(--azul); color: #fff;
+  padding: 7px 13px; border-radius: 5px;
+  font-size: 0.79rem; cursor: pointer;
+  border: none; transition: background .2s;
+}
+.btn-upload:hover { background: var(--azul2); }
+input[type="file"] { display: none; }
+.slot-status {
+  font-size: 0.76rem; color: var(--gris);
+  margin-top: 7px; min-height: 1.1em;
+}
+.slot.loaded .slot-status { color: var(--verde); }
+.slot.error  .slot-status { color: var(--rojo);  }
+
+#btn-procesar {
+  display: block; width: 100%;
+  padding: 11px; border: none; border-radius: 8px;
+  background: var(--azul); color: #fff;
+  font-size: 0.98rem; font-weight: 700; cursor: pointer;
+  transition: background .2s;
+}
+#btn-procesar:hover:not(:disabled) { background: var(--azul2); }
+#btn-procesar:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════════════════════════ */
+#loading {
+  text-align: center; padding: 40px 20px; color: var(--azul);
+}
+.spinner {
+  width: 38px; height: 38px;
+  border: 4px solid #e5e7eb;
+  border-top-color: var(--azul);
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+  margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading p { font-size: .9rem; }
+#loading small { font-size: .76rem; color: var(--gris); margin-top: 5px; display: block; }
+
+/* ═══════════════════════════════════════════════════════════════
+   BANNER DE ERROR
+═══════════════════════════════════════════════════════════════ */
+#error-banner {
+  background: #fef2f2; border: 1px solid #fecaca;
+  border-radius: 8px; padding: 11px 14px;
+  color: var(--rojo); margin-bottom: 14px;
+  font-size: .87rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECCIÓN VALIDACIÓN
+═══════════════════════════════════════════════════════════════ */
+#validation-section { max-width: 1120px; margin: 0 auto; }
+#validation-section h2 {
+  font-size: .95rem; color: var(--azul);
+  margin-bottom: 11px; font-weight: 700;
+}
+
+.tbl-wrap {
+  overflow-x: auto; background: #fff;
+  border-radius: 8px; border: 1px solid var(--borde);
+  margin-bottom: 14px;
+}
+.vtable {
+  width: 100%; border-collapse: collapse; font-size: .8rem;
+}
+.vtable th {
+  background: var(--azul); color: #fff;
+  padding: 7px 9px; text-align: left; white-space: nowrap;
+}
+.vtable td {
+  padding: 6px 9px; border-bottom: 1px solid var(--borde);
+}
+.vtable tr:last-child td { border-bottom: none; }
+.vtable tr:nth-child(even) td { background: #f9fafb; }
+.tnum { text-align: right; font-family: monospace; }
+
+.badge {
+  display: inline-block; padding: 2px 6px;
+  border-radius: 3px; font-size: .68rem; font-weight: 700;
+}
+.badge-utedyc   { background: #dbeafe; color: #1e40af; }
+.badge-porteros { background: #fef3c7; color: #92400e; }
+.badge-maestros { background: #d1fae5; color: #065f46; }
+
+.actions {
+  display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.btn-a {
+  padding: 9px 16px; border: none; border-radius: 6px;
+  font-size: .87rem; font-weight: 700; cursor: pointer;
+  transition: filter .15s;
+}
+.btn-a:hover { filter: brightness(1.1); }
+.btn-print  { background: var(--azul);  color: #fff; }
+.btn-dl     { background: #15803d;      color: #fff; }
+.btn-reset  { background: #e5e7eb;      color: #374151; }
+
+#preview-toggle {
+  font-size: .78rem; color: var(--azul2);
+  cursor: pointer; text-decoration: underline;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RECIBOS — ESTILOS PANTALLA
+═══════════════════════════════════════════════════════════════ */
+#receipts-container { margin-top: 18px; }
+
+.recibo-doble {
+  display: flex; gap: 10px;
+  margin-bottom: 18px; padding: 10px;
+  background: #fff;
+  border: 1px solid var(--borde); border-radius: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RECIBO: COPIA (compartido pantalla + print)
+═══════════════════════════════════════════════════════════════ */
+.recibo-copia {
+  flex: 1;
+  border: 1px solid #9ca3af;
+  padding: 7px;
+  font-size: 7.5pt;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Cabecera azul */
+.rec-hdr {
+  background: var(--azul); color: #fff;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 4px 6px; margin-bottom: 4px;
+}
+.rec-empresa strong { display: block; font-size: 8pt; }
+.rec-empresa span   { display: block; font-size: 6pt; line-height: 1.45; }
+.rec-titulo-box { text-align: right; }
+.rec-titulo     { font-size: 8.5pt; font-weight: 700; }
+.rec-copia-lbl  {
+  font-size: 6pt; border: .8pt solid rgba(255,255,255,.75);
+  padding: 1px 4px; margin-left: 5px; vertical-align: middle;
+}
+.rec-periodo { font-size: 6pt; margin-top: 1px; }
+
+/* Tabla datos del empleado */
+.rec-datos {
+  width: 100%; border-collapse: collapse;
+  font-size: 6.5pt; margin-bottom: 3px;
+}
+.rec-datos td {
+  padding: 2px 4px; border: .4pt solid #d1d5db;
+}
+.rec-datos td.lbl { font-weight: 700; background: #f9fafb; width: 18%; }
+
+/* Tabla de conceptos (6 columnas: 3 grupos × nombre+importe) */
+.rec-conceptos {
+  width: 100%; border-collapse: collapse;
+  font-size: 6pt; margin-bottom: 3px;
+}
+.rec-conceptos th {
+  background: var(--azul); color: #fff;
+  padding: 2px 3px; text-align: center; font-size: 5.5pt;
+}
+.rec-conceptos td {
+  padding: 1.5px 3px; border: .3pt solid #e5e7eb;
+  vertical-align: top; overflow: hidden;
+}
+/* Columnas de nombre (1,3,5): 20% cada una */
+.rec-conceptos td:nth-child(1),
+.rec-conceptos td:nth-child(3),
+.rec-conceptos td:nth-child(5) { width: 20%; word-break: break-word; }
+/* Columnas de importe (2,4,6): 13% cada una, monospace, alineadas a la derecha */
+.rec-conceptos td:nth-child(2),
+.rec-conceptos td:nth-child(4),
+.rec-conceptos td:nth-child(6) {
+  width: 13%; text-align: right; font-family: monospace; white-space: nowrap;
+}
+.rec-conceptos tfoot td {
+  font-weight: 700; background: #f3f4f6;
+  border-top: .8pt solid #9ca3af; padding: 2px 3px;
+}
+.rec-conceptos tfoot td:nth-child(2),
+.rec-conceptos tfoot td:nth-child(4),
+.rec-conceptos tfoot td:nth-child(6) {
+  text-align: right; font-family: monospace;
+}
+
+/* Neto */
+.rec-neto {
+  background: var(--azul); color: #fff;
+  font-weight: 700; font-size: 8pt;
+  padding: 3px 6px;
+  display: flex; justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+/* Letras */
+.rec-letras {
+  font-size: 6pt; font-style: italic;
+  border: .4pt solid var(--borde);
+  padding: 2px 4px; margin-bottom: 10px;
+}
+
+/* Firmas */
+.rec-firmas {
+  display: flex; justify-content: space-around;
+}
+.firma-ln {
+  width: 110px; border-top: .8pt solid #000;
+  text-align: center; font-size: 6pt; padding-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   @MEDIA PRINT — A4 APAISADO
+═══════════════════════════════════════════════════════════════ */
+@media print {
+  @page { size: A4 landscape; margin: 6mm; }
+
+  body { background: #fff; padding: 0; font-size: 7pt; }
+
+  /* Ocultar UI */
+  #app-header,
+  #upload-section,
+  #loading,
+  #error-banner,
+  #validation-section,
+  #preview-toggle { display: none !important; }
+
+  #receipts-container { margin: 0; }
+
+  .recibo-doble {
+    display: flex !important;
+    flex-direction: row;
+    gap: 3mm;
+    width: 100%; margin: 0; padding: 0;
+    background: transparent; border: none; border-radius: 0;
+    page-break-after: always;
+    break-after: page;
+  }
+  .recibo-doble:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .recibo-copia {
+    flex: 1;
+    width: calc(50% - 1.5mm);
+    border: .5pt solid #555 !important;
+    padding: 3mm;
+    font-size: 6.5pt;
+    box-shadow: none;
+    box-sizing: border-box;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════════════════════════ */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ CABECERA ══════════════ -->
+<div id="app-header">
+  <h1>🧾 Generador de Recibos de Sueldo</h1>
+  <p>A.C.D.P.S DYPS · España 843 (2000) Rosario, Santa Fe · CUIT: 30-71021062-0</p>
+</div>
+
+<!-- ══════════════ FASE 1: UPLOAD ══════════════ -->
+<section id="upload-section">
+
+  <div class="api-row">
+    <label for="api-url">🌐 URL Serverless:</label>
+    <input type="text" id="api-url" value="/api/procesar"
+           placeholder="https://mi-app.vercel.app/api/procesar">
+  </div>
+
+  <div class="upload-grid">
+
+    <div class="slot" id="slot-utedyc">
+      <span class="slot-label">📋 CSV UTEDYC</span>
+      <label class="btn-upload" for="file-utedyc">📂 Cargar CSV</label>
+      <input type="file" id="file-utedyc" accept=".csv,.txt"
+             onchange="handleFile('utedyc', this)">
+      <div class="slot-status" id="status-utedyc">Sin cargar</div>
+    </div>
+
+    <div class="slot" id="slot-porteros">
+      <span class="slot-label">🏢 CSV Porteros</span>
+      <label class="btn-upload" for="file-porteros">📂 Cargar CSV</label>
+      <input type="file" id="file-porteros" accept=".csv,.txt"
+             onchange="handleFile('porteros', this)">
+      <div class="slot-status" id="status-porteros">Sin cargar</div>
+    </div>
+
+    <div class="slot" id="slot-maestros">
+      <span class="slot-label">🎓 CSV Maestros / Directores</span>
+      <label class="btn-upload" for="file-maestros">📂 Cargar CSV</label>
+      <input type="file" id="file-maestros" accept=".csv,.txt"
+             onchange="handleFile('maestros', this)">
+      <div class="slot-status" id="status-maestros">Sin cargar</div>
+    </div>
+
+  </div>
+
+  <button id="btn-procesar" onclick="procesarTodo()" disabled>
+    ✨ Procesar con IA
+  </button>
+
+</section>
+
+<!-- ══════════════ FASE 2: LOADING ══════════════ -->
+<div id="loading" class="hidden">
+  <div class="spinner"></div>
+  <p>Enviando a la IA…</p>
+  <small>Esto puede tomar entre 15 y 45 segundos</small>
+</div>
+
+<!-- ══════════════ ERROR ══════════════ -->
+<div id="error-banner" class="hidden"></div>
+
+<!-- ══════════════ FASE 3: VALIDACIÓN ══════════════ -->
+<section id="validation-section" class="hidden">
+  <h2>👥 Empleados procesados: <span id="emp-count">0</span></h2>
+
+  <div class="tbl-wrap">
+    <table class="vtable">
+      <thead>
+        <tr>
+          <th>Tipo</th><th>Nombre</th><th>CUIL</th><th>Legajo</th>
+          <th>Función</th><th>Período</th>
+          <th class="tnum">Hab. Rem.</th>
+          <th class="tnum">Hab. NR</th>
+          <th class="tnum">Descuentos</th>
+          <th class="tnum">NETO</th>
+        </tr>
+      </thead>
+      <tbody id="val-tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="actions">
+    <button class="btn-a btn-print" onclick="imprimirRecibos()">🖨️ Imprimir Recibos PDF</button>
+    <button class="btn-a btn-dl"    onclick="descargarConceptos()">⬇️ TXT Conceptos (ARCA)</button>
+    <button class="btn-a btn-dl"    onclick="descargarLiquidacion()">⬇️ TXT Liquidación (ARCA)</button>
+    <button class="btn-a btn-reset" onclick="resetear()">🗑️ Limpiar todo</button>
+  </div>
+
+  <span id="preview-toggle" onclick="togglePreview()">▼ Mostrar preview de recibos</span>
+</section>
+
+<!-- ══════════════ FASE 4: RECIBOS (target de impresión) ══════════════ -->
+<div id="receipts-container" class="hidden"></div>
+
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// TABLAS ARCA/AFIP (duplicadas del backend para la generación TXT)
+// ═══════════════════════════════════════════════════════════════
+const EMPLEADOR = {
+  razonSocial: 'A.C.D.P.S DYPS',
+  cuit:        '30-71021062-0',
+  cuitRaw:     '30710210620',
+  direccion:   'ESPAÑA 843 (2000) - ROSARIO - SANTA FE',
+};
+
+const CATEGORIA_ARCA = {
+  '0004':'110000','0014':'110000','0024':'110000','0025':'110000',
+  '0026':'110000','0027':'110000','0028':'110000','0029':'110000',
+  '0032':'110000','0033':'110000','0038':'110000','0039':'110000',
+  '0046':'110000','0047':'110000','0048':'110000','0054':'110000',
+  '0059':'110000','0074':'110000',
+  '0201':'170001','0224':'160001',
+  '0034':'550000','0035':'550000','0036':'550000','0037':'550000',
+  '0055':'550000','0057':'550000','0061':'550000','0062':'550000',
+  '0100':'550000','0115':'550000',
+  '0300':'810000','0302':'810001','0307':'810002','0310':'810002',
+  '0315':'810002','0322':'810004','0323':'810004',
+  '0800':'799999','0988':'810015',
+};
+
+const DESC_ARCA = {
+  '0004':'SUELDO MENSUAL JORN.RED','0014':'5-BÁSICO','0024':'370-SUPL.PLAN',
+  '0025':'372-ASIG.ESP.REM.NO','0026':'407-ADICIONAL','0027':'409-FUNCION',
+  '0028':'410-ASIG-REM-NO','0029':'412-AS.REM. NO BONIF','0032':'421-SUPL.REM.NO',
+  '0033':'422-ASIG.ESP.REM','0034':'456-ASIG.NO REM. NO','0035':'470-PRESENTISMO D.2670/92',
+  '0036':'513-ASIG.NO REM NO','0037':'546-ASNRNB 2021 D.2172/21','0038':'190-ANTIGUEDAD',
+  '0039':'387-ESTADO DOCENTE','0046':'388-COMPLEM.AL BÁSICO','0047':'395-RECON. FUNC.DOCENTE',
+  '0048':'408-ADICIONAL','0054':'418-SUPL.REM.TRANSIT.','0055':'480-ACT.ESPEF.DOCENTE',
+  '0057':'455-MATERIAL DIDACTICO','0059':'388-1/389','0061':'GARANTIA','0062':'FOPCID',
+  '0074':'405-SUPL.REM.NO','0100':'CONEC NACIONAL','0115':'CONEC NACIONAL 2',
+  '0201':'PRESENTISMO','0224':'ANTIGÜEDAD UTEDYC',
+  '0300':'JUBILACION','0302':'LEY 19032','0307':'O.SOC. JORNADA REDUCIDA',
+  '0310':'OBRA SOCIAL','0315':'OBRA SOCIAL','0322':'APORTE SOLIDARIO',
+  '0323':'CUOTA GREMIAL','0800':'DIFERENCIA REDONDEO','0988':'JUB.CAJA',
+};
+
+const FLAGS_ARCA = {
+  '110000':'11111111111 1 1 10 0         ',
+  '160001':'11111111111 1 1 10 0         ',
+  '170001':'11111111111 1 1 10 0         ',
+  '550000':'10000000000 0 0 10 0         ',
+  '799999':'10000000000 0 0 00 0         ',
+  '810000':'10000000000 0 0 00 0         ',
+  '810001':'10000000000 0 0 00 0         ',
+  '810002':'10000000000 0 0 00 0         ',
+  '810004':'10000000000 0 0 00 0         ',
+  '810015':'10000000000 0 0 00 0         ',
+};
+
+const CATS_REMUNERATIVAS = new Set(['110000', '160001', '170001']);
+
+// ═══════════════════════════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════════════════════════
+const csvs = { utedyc: null, porteros: null, maestros: null };
+let empleados = [];
+let previewVisible = false;
+
+// ═══════════════════════════════════════════════════════════════
+// CARGA DE ARCHIVOS CSV
+// ═══════════════════════════════════════════════════════════════
+function handleFile(tipo, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const slot   = document.getElementById(`slot-${tipo}`);
+  const status = document.getElementById(`status-${tipo}`);
+
+  status.textContent = '⏳ Leyendo…';
+  slot.classList.remove('loaded', 'error');
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    csvs[tipo] = e.target.result;
+    slot.classList.add('loaded');
+    status.textContent = `✅ ${file.name}`;
+    actualizarBtn();
+    input.value = ''; // permitir re-carga del mismo archivo
+  };
+  reader.onerror = () => {
+    slot.classList.add('error');
+    status.textContent = '❌ Error al leer el archivo';
+    actualizarBtn();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function actualizarBtn() {
+  document.getElementById('btn-procesar').disabled =
+    !(csvs.utedyc || csvs.porteros || csvs.maestros);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LLAMADA A LA API SERVERLESS
+// ═══════════════════════════════════════════════════════════════
+async function procesarTodo() {
+  const apiUrl = document.getElementById('api-url').value.trim();
+  if (!apiUrl) { mostrarError('Ingresá la URL de la función serverless.'); return; }
+
+  showLoading(true);
+  ocultarError();
+  esconder('validation-section');
+  esconder('receipts-container');
+  previewVisible = false;
+  document.getElementById('preview-toggle').textContent = '▼ Mostrar preview de recibos';
+
+  const payload = {};
+  if (csvs.utedyc)   payload.utedyc   = csvs.utedyc;
+  if (csvs.porteros) payload.porteros = csvs.porteros;
+  if (csvs.maestros) payload.maestros = csvs.maestros;
+
+  const ctrl    = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), 90_000);
+
+  try {
+    const resp = await fetch(apiUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+      signal:  ctrl.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: `Error HTTP ${resp.status}` }));
+      throw new Error(err.error || `Error del servidor: ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    empleados  = data.empleados || [];
+
+    if (!empleados.length) throw new Error('La IA no encontró empleados en los archivos enviados.');
+
+    renderValidacion(empleados);
+    renderRecibos(empleados);
+    mostrar('validation-section');
+
+  } catch (err) {
+    clearTimeout(timeout);
+    mostrarError(err.name === 'AbortError'
+      ? 'Tiempo de espera agotado (90 s). Verificá la URL de la API y tu conexión a internet.'
+      : err.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TABLA DE VALIDACIÓN
+// ═══════════════════════════════════════════════════════════════
+function renderValidacion(emps) {
+  document.getElementById('emp-count').textContent = emps.length;
+  const tbody = document.getElementById('val-tbody');
+  tbody.innerHTML = '';
+
+  for (const emp of emps) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="badge badge-${emp.tipo || 'maestros'}">${(emp.tipo || '—').toUpperCase()}</span></td>
+      <td>${h(emp.nombre)}</td>
+      <td style="font-family:monospace;font-size:.76rem">${h(formatCUIL(emp.cuil))}</td>
+      <td>${h(emp.legajo)}</td>
+      <td>${h(emp.funcion)}</td>
+      <td>${h(emp.periodo)}</td>
+      <td class="tnum">${$$(emp.totalRemunerativo)}</td>
+      <td class="tnum">${$$(emp.totalNoRemunerativo)}</td>
+      <td class="tnum">${$$(emp.totalDescuentos)}</td>
+      <td class="tnum" style="font-weight:700;color:#15803d">${$$(emp.neto)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER DE RECIBOS (para pantalla y para print)
+// ═══════════════════════════════════════════════════════════════
+function renderRecibos(emps) {
+  const cont = document.getElementById('receipts-container');
+  cont.innerHTML = '';
+  for (const emp of emps) {
+    const doble = document.createElement('div');
+    doble.className = 'recibo-doble';
+    doble.appendChild(buildCopia(emp, 'ORIGINAL'));
+    doble.appendChild(buildCopia(emp, 'DUPLICADO'));
+    cont.appendChild(doble);
+  }
+}
+
+function buildCopia(emp, etiqueta) {
+  // Período: "04/2026" → AAAAMM "202604" → nombre "Abril 2026"
+  const [mmP, yyyyP] = (emp.periodo || '00/0000').split('/');
+  const periodoAAAMM = `${yyyyP || '0000'}${mmP || '00'}`;
+  const periodoNombre = formatPeriodo(periodoAAAMM);
+
+  // Separar conceptos en 3 grupos
+  const rem   = (emp.conceptos || []).filter(c => c.tipo === 'C' && isRem(c.codigo));
+  const noRem = (emp.conceptos || []).filter(c => c.tipo === 'C' && !isRem(c.codigo));
+  const desc  = (emp.conceptos || []).filter(c => c.tipo === 'D');
+
+  const maxFilas = Math.max(rem.length, noRem.length, desc.length, 1);
+
+  let filas = '';
+  for (let i = 0; i < maxFilas; i++) {
+    const c1 = rem[i]   || null; // col 1: haberes remunerativos
+    const c2 = desc[i]  || null; // col 2: descuentos (centro)
+    const c3 = noRem[i] || null; // col 3: no remunerativos
+    filas += `<tr>
+      <td>${h(c1?.descripcion)}</td><td>${c1 ? $$(c1.importe) : ''}</td>
+      <td>${h(c2?.descripcion)}</td><td>${c2 ? $$(c2.importe) : ''}</td>
+      <td>${h(c3?.descripcion)}</td><td>${c3 ? $$(c3.importe) : ''}</td>
+    </tr>`;
+  }
+
+  const div = document.createElement('div');
+  div.className = 'recibo-copia';
+  div.innerHTML = `
+    <div class="rec-hdr">
+      <div class="rec-empresa">
+        <strong>${EMPLEADOR.razonSocial}</strong>
+        <span>${EMPLEADOR.direccion}</span>
+        <span>CUIT: ${EMPLEADOR.cuit}</span>
+      </div>
+      <div class="rec-titulo-box">
+        <div class="rec-titulo">RECIBO DE SUELDO<span class="rec-copia-lbl">${etiqueta}</span></div>
+        <div class="rec-periodo">Mensual &mdash; ${periodoNombre}</div>
+      </div>
+    </div>
+
+    <table class="rec-datos">
+      <tr>
+        <td class="lbl">Nombre:</td>
+        <td colspan="3">${h(emp.nombre)}</td>
+      </tr><tr>
+        <td class="lbl">CUIL:</td>
+        <td>${h(formatCUIL(emp.cuil))}</td>
+        <td class="lbl">Legajo:</td>
+        <td>${h(emp.legajo) || '&mdash;'}</td>
+      </tr><tr>
+        <td class="lbl">Función:</td>
+        <td>${h(emp.funcion)}</td>
+        <td class="lbl">Ingreso:</td>
+        <td>${h(emp.fechaIngreso) || '&mdash;'}</td>
+      </tr>
+    </table>
+
+    <table class="rec-conceptos">
+      <thead>
+        <tr>
+          <th colspan="2">HABERES REMUNERATIVOS</th>
+          <th colspan="2">DESCUENTOS</th>
+          <th colspan="2">NO REMUNERATIVOS</th>
+        </tr>
+      </thead>
+      <tbody>${filas}</tbody>
+      <tfoot>
+        <tr>
+          <td>TOTAL REM.:</td>  <td>${$$(emp.totalRemunerativo)}</td>
+          <td>TOTAL DESC.:</td> <td>${$$(emp.totalDescuentos)}</td>
+          <td>TOTAL NR.:</td>   <td>${$$(emp.totalNoRemunerativo)}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="rec-neto">
+      <span>NETO A PAGAR:</span>
+      <span>${$$(emp.neto)}</span>
+    </div>
+
+    <div class="rec-letras">${h(numeroALetras(emp.neto || 0))}</div>
+
+    <div class="rec-firmas">
+      <div class="firma-ln">Firma Empleador</div>
+      <div class="firma-ln">Firma Asociado</div>
+    </div>
+  `;
+  return div;
+}
+
+function isRem(codigo6) {
+  const cat = CATEGORIA_ARCA[(codigo6 || '').slice(0, 4)] || '110000';
+  return CATS_REMUNERATIVAS.has(cat);
+}
+
+function imprimirRecibos() {
+  mostrar('receipts-container');
+  setTimeout(() => window.print(), 250);
+}
+
+function togglePreview() {
+  previewVisible = !previewVisible;
+  const el = document.getElementById('preview-toggle');
+  if (previewVisible) {
+    mostrar('receipts-container');
+    el.textContent = '▲ Ocultar preview de recibos';
+  } else {
+    esconder('receipts-container');
+    el.textContent = '▼ Mostrar preview de recibos';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GENERACIÓN ARCHIVOS ARCA/AFIP
+// ═══════════════════════════════════════════════════════════════
+
+/** Conceptos_AAAAMM.txt — 195 chars por línea */
+function generarConceptos(emps) {
+  const vistos = new Map(); // codigo6 → { cat, desc }
+
+  for (const emp of emps) {
+    for (const c of (emp.conceptos || [])) {
+      if (!c.codigo || !c.importe) continue;
+      const cod6 = String(c.codigo).padStart(6, '0');
+      if (vistos.has(cod6)) continue;
+      const cod4 = cod6.slice(0, 4);
+      const cat  = CATEGORIA_ARCA[cod4] || c.categoria || '110000';
+      const desc = (DESC_ARCA[cod4] || c.descripcion || cod6).toUpperCase().slice(0, 150);
+      vistos.set(cod6, { cat, desc });
+    }
+  }
+
+  const lineas = [];
+  for (const [cod6, info] of [...vistos.entries()].sort()) {
+    const flags       = FLAGS_ARCA[info.cat] || FLAGS_ARCA['110000'];
+    const descPadded  = info.desc.padStart(150, ' ');
+    const linea = `${info.cat}    ${cod6}${descPadded}${flags}`;
+    // Advertencia de diagnóstico (no afecta producción)
+    if (linea.length !== 195) console.warn(`Conceptos: longitud ${linea.length} ≠ 195 para ${cod6}`);
+    lineas.push(linea);
+  }
+
+  return lineas.join('\r\n');
+}
+
+/** Liquidacion_AAAAMM.txt — ancho fijo */
+function generarLiquidacion(emps) {
+  if (!emps.length) return '';
+
+  const [mm0, yyyy0] = (emps[0].periodo || '00/0000').split('/');
+  const periodoAAAMM = `${yyyy0 || '0000'}${mm0 || '00'}`;
+
+  const lineas = [];
+  // Tipo 01 — Cabecera del archivo
+  lineas.push(`01${EMPLEADOR.cuitRaw}SJ${periodoAAAMM}M00001300000${String(emps.length).padStart(2, '0')}`);
+
+  const tipo04s = [];
+
+  emps.forEach((emp, idx) => {
+    const cuil = ((emp.cuil || '').replace(/\D/g, '') || '00000000000').padEnd(11, '0').slice(0, 11);
+    const orden = String(idx + 1).padStart(11, '0');
+
+    const [mm, yyyy] = (emp.periodo || '00/0000').split('/');
+    const yy        = (yyyy || '0000').slice(2, 4);
+    const ultimoDia = String(new Date(+(yyyy || 0), +(mm || 0), 0).getDate()).padStart(2, '0');
+    const fechaARCA = `0002${'0' + yy + (mm || '00') + ultimoDia}`; // 11 chars
+
+    // Tipo 02 — Cabecera de empleado
+    lineas.push(`02${cuil}${orden}${' '.repeat(80)}${fechaARCA}${' '.repeat(8)}1`);
+
+    // Tipo 03 — Conceptos del empleado
+    for (const c of (emp.conceptos || [])) {
+      const cents = c.importeCents !== undefined
+        ? Math.abs(c.importeCents)
+        : Math.round(Math.abs(c.importe || 0) * 100);
+      if (!cents) continue;
+      const cod4    = String(c.codigo || '0000').slice(0, 4).padStart(4, '0');
+      const monto   = String(cents).padStart(15, '0');
+      const cd      = c.tipo === 'C' ? 'C' : 'D';
+      lineas.push(`03${cuil}    ${cod4}0000000 ${monto}${cd}`);
+    }
+
+    // Tipo 04 — Totales (se acumulan y agregan al final)
+    const pRem  = String(Math.round((emp.totalRemunerativo   || 0) * 100)).padStart(15, '0');
+    const pNR   = String(Math.round((emp.totalNoRemunerativo || 0) * 100)).padStart(15, '0');
+    const pDesc = String(Math.round((emp.totalDescuentos     || 0) * 100)).padStart(15, '0');
+    const pNeto = String(Math.round((emp.neto                || 0) * 100)).padStart(15, '0');
+    tipo04s.push(`04${cuil}000110100101016008007501010000000030000000000000000${pRem}${pNR}${pDesc}${pNeto}`);
+  });
+
+  for (const t of tipo04s) lineas.push(t);
+  return lineas.join('\r\n');
+}
+
+function descargarTxt(contenido, nombre) {
+  const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = nombre;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function descargarConceptos() {
+  if (!empleados.length) return;
+  const [mm, yyyy] = (empleados[0].periodo || '00/0000').split('/');
+  descargarTxt(generarConceptos(empleados), `Conceptos_${yyyy || '0000'}${mm || '00'}.txt`);
+}
+
+function descargarLiquidacion() {
+  if (!empleados.length) return;
+  const [mm, yyyy] = (empleados[0].periodo || '00/0000').split('/');
+  descargarTxt(generarLiquidacion(empleados), `Liquidacion_${yyyy || '0000'}${mm || '00'}.txt`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FUNCIONES DE FORMATO
+// ═══════════════════════════════════════════════════════════════
+
+/** Formato monetario argentino: $1.234.567,89 */
+function $$(n) {
+  if (n == null) return '$0,00';
+  const abs = Math.abs(+n || 0);
+  const [ent, dec] = abs.toFixed(2).split('.');
+  return '$' + ent.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + dec;
+}
+
+/** CUIL con guiones: 11 dígitos → "XX-XXXXXXXX-X" */
+function formatCUIL(cuil) {
+  const c = String(cuil || '').replace(/\D/g, '');
+  return c.length === 11 ? `${c.slice(0,2)}-${c.slice(2,10)}-${c.slice(10)}` : (cuil || '—');
+}
+
+/** Período AAAAMM → "Abril 2026" */
+function formatPeriodo(p) {
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  if (!p || p.length < 6) return p || '';
+  return `${MESES[parseInt(p.slice(4, 6)) - 1] || p.slice(4,6)} ${p.slice(0, 4)}`;
+}
+
+/** Número a letras en español */
+function numeroALetras(num) {
+  const UNI = ['','UNO','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE',
+    'DIEZ','ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISÉIS','DIECISIETE','DIECIOCHO','DIECINUEVE'];
+  const DEC = ['','DIEZ','VEINTE','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'];
+  const CEN = ['','CIEN','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS',
+               'SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];
+
+  function m1000(n) {
+    if (!n)  return '';
+    if (n < 20) return UNI[n];
+    if (n < 100) { const d=Math.floor(n/10),u=n%10; return DEC[d]+(u?' Y '+UNI[u]:''); }
+    const c=Math.floor(n/100), r=n%100;
+    return (c===1&&r?'CIENTO':CEN[c])+(r?' '+m1000(r):'');
+  }
+  function mMill(n) {
+    if (n < 1000) return m1000(n);
+    const mil=Math.floor(n/1000), r=n%1000;
+    return (mil===1?'MIL':m1000(mil)+' MIL')+(r?' '+m1000(r):'');
+  }
+
+  const entero = Math.floor(+num || 0);
+  const cents  = Math.round(((+num||0) - entero) * 100);
+
+  if (!entero) return `SON CERO PESOS CON ${String(cents).padStart(2,'0')}/100`;
+
+  let letras = '';
+  if (entero >= 1_000_000) {
+    const mill=Math.floor(entero/1_000_000), r=entero%1_000_000;
+    letras=(mill===1?'UN MILLÓN':m1000(mill)+' MILLONES')+(r?' '+mMill(r):'');
+  } else {
+    letras = mMill(entero);
+  }
+  return `SON ${letras} PESOS CON ${String(cents).padStart(2,'0')}/100`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS UI
+// ═══════════════════════════════════════════════════════════════
+function mostrar(id)   { document.getElementById(id).classList.remove('hidden'); }
+function esconder(id)  { document.getElementById(id).classList.add('hidden'); }
+function showLoading(v){ v ? mostrar('loading') : esconder('loading'); }
+
+function mostrarError(msg) {
+  const el = document.getElementById('error-banner');
+  el.textContent = '❌ ' + msg;
+  el.classList.remove('hidden');
+}
+function ocultarError() { document.getElementById('error-banner').classList.add('hidden'); }
+
+/** Escape HTML seguro */
+function h(str) {
+  return String(str ?? '—')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function resetear() {
+  csvs.utedyc = csvs.porteros = csvs.maestros = null;
+  empleados = [];
+  ['utedyc','porteros','maestros'].forEach(t => {
+    document.getElementById(`slot-${t}`).classList.remove('loaded','error');
+    document.getElementById(`status-${t}`).textContent = 'Sin cargar';
+    document.getElementById(`file-${t}`).value = '';
+  });
+  esconder('validation-section');
+  esconder('receipts-container');
+  ocultarError();
+  document.getElementById('btn-procesar').disabled = true;
+  document.getElementById('val-tbody').innerHTML = '';
+  document.getElementById('receipts-container').innerHTML = '';
+  document.getElementById('preview-toggle').textContent = '▼ Mostrar preview de recibos';
+  previewVisible = false;
+}
+</script>
+</body>
+</html>

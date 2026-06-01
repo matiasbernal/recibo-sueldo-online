@@ -1,4 +1,4 @@
-import { jwtVerify } from 'jose';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: verifica JWT y que el usuario sea el administrador
@@ -9,14 +9,14 @@ async function checkAdmin(req) {
     const e = new Error('Sesión requerida'); e.status = 401; throw e;
   }
 
-  if (!process.env.SUPABASE_JWT_SECRET) {
-    const e = new Error('Configuración del servidor incompleta (SUPABASE_JWT_SECRET)'); e.status = 500; throw e;
+  if (!process.env.SUPABASE_URL) {
+    const e = new Error('Configuración del servidor incompleta (SUPABASE_URL)'); e.status = 500; throw e;
   }
 
   let payload;
   try {
-    const secret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
-    ({ payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] }));
+    const JWKS = createRemoteJWKSet(new URL(`${process.env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`));
+    ({ payload } = await jwtVerify(token, JWKS));
   } catch {
     const e = new Error('Sesión inválida o expirada'); e.status = 401; throw e;
   }

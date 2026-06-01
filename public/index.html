@@ -4,7 +4,147 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recibos de Sueldo — A.C.D.P.S DYPS</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN SCREEN
+═══════════════════════════════════════════════════════════════ */
+#login-screen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+#login-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 36px 32px;
+  width: 340px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.1);
+  text-align: center;
+}
+#login-card .login-logo {
+  font-size: 2.4rem; margin-bottom: 6px;
+}
+#login-card h2 {
+  font-size: 1rem; font-weight: 700;
+  color: var(--azul); margin-bottom: 2px;
+}
+#login-card h3 {
+  font-size: .8rem; color: var(--gris);
+  font-weight: 400; margin-bottom: 24px;
+}
+.login-field {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid var(--borde); border-radius: 6px;
+  font-size: .9rem; margin-bottom: 10px;
+  transition: border-color .2s;
+}
+.login-field:focus { outline: none; border-color: var(--azul); }
+#btn-login {
+  width: 100%; padding: 10px;
+  background: var(--azul); color: #fff;
+  border: none; border-radius: 6px;
+  font-size: .95rem; font-weight: 700;
+  cursor: pointer; transition: background .2s;
+  margin-top: 4px;
+}
+#btn-login:hover:not(:disabled) { background: var(--azul2); }
+#btn-login:disabled { opacity: .5; cursor: not-allowed; }
+#login-error {
+  margin-top: 10px; font-size: .82rem;
+  color: var(--rojo); min-height: 1.2em;
+}
+#login-spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 3px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  vertical-align: middle; margin-right: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   USER BAR (cabecera de sesión)
+═══════════════════════════════════════════════════════════════ */
+#user-bar {
+  background: #0f2549;
+  color: #cbd5e1;
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; padding: 6px 16px;
+  font-size: .78rem;
+}
+#user-bar span { opacity: .85; }
+.btn-bar {
+  background: transparent; color: #94a3b8;
+  border: 1px solid #334155; border-radius: 4px;
+  padding: 3px 10px; font-size: .75rem; cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.btn-bar:hover { color: #fff; border-color: #64748b; }
+.btn-bar.admin { color: #60a5fa; border-color: #1d4ed8; }
+.btn-bar.admin:hover { background: #1d3461; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PANEL DE ADMINISTRACIÓN
+═══════════════════════════════════════════════════════════════ */
+#admin-section {
+  max-width: 680px; margin: 0 auto 18px;
+  background: #fff; border: 2px solid #1d4ed8;
+  border-radius: 10px; overflow: hidden;
+}
+#admin-section h2 {
+  background: #1e3a8a; color: #fff;
+  padding: 10px 16px; font-size: .95rem; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.admin-body { padding: 16px; }
+
+.admin-add-form {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  align-items: flex-end; margin-bottom: 16px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--borde);
+}
+.admin-add-form label { font-size: .8rem; font-weight: 600; color: #374151; display: block; margin-bottom: 3px; }
+.admin-add-form input {
+  padding: 7px 10px; border: 1px solid var(--borde); border-radius: 5px;
+  font-size: .82rem; width: 190px;
+}
+#btn-add-user {
+  padding: 8px 14px; background: #1d4ed8; color: #fff;
+  border: none; border-radius: 5px; font-size: .82rem;
+  font-weight: 700; cursor: pointer; white-space: nowrap;
+  align-self: flex-end;
+}
+#btn-add-user:hover:not(:disabled) { background: #1e40af; }
+#btn-add-user:disabled { opacity: .5; cursor: not-allowed; }
+#admin-msg {
+  font-size: .8rem; margin-top: 6px; min-height: 1.1em;
+  width: 100%;
+}
+#admin-msg.ok  { color: var(--verde); }
+#admin-msg.err { color: var(--rojo); }
+
+.users-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.users-table th {
+  background: #f1f5f9; color: #374151;
+  padding: 6px 9px; text-align: left; font-size: .76rem;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.users-table td { padding: 7px 9px; border-top: 1px solid var(--borde); }
+.admin-badge {
+  font-size: .65rem; font-weight: 700; background: #dbeafe;
+  color: #1e40af; padding: 1px 5px; border-radius: 3px; margin-left: 5px;
+}
+.btn-del {
+  background: #fef2f2; color: var(--rojo);
+  border: 1px solid #fecaca; border-radius: 4px;
+  padding: 3px 9px; font-size: .75rem; cursor: pointer;
+  font-weight: 600;
+}
+.btn-del:hover { background: #fee2e2; }
+.btn-del:disabled { opacity: .4; cursor: not-allowed; }
+#users-loading { color: var(--gris); font-size: .82rem; padding: 10px 0; text-align: center; }
+
 /* ═══════════════════════════════════════════════════════════════
    RESET Y VARIABLES
 ═══════════════════════════════════════════════════════════════ */
@@ -345,6 +485,55 @@ input[type="file"] { display: none; }
 </head>
 <body>
 
+<!-- ══════════════ PANTALLA DE LOGIN ══════════════ -->
+<div id="login-screen" class="hidden">
+  <div id="login-card">
+    <div class="login-logo">🧾</div>
+    <h2>A.C.D.P.S DYPS</h2>
+    <h3>Generador de Recibos de Sueldo</h3>
+    <input class="login-field" type="email"    id="login-email"    placeholder="Email" autocomplete="email">
+    <input class="login-field" type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
+    <button id="btn-login" onclick="doLogin()">Iniciar sesión</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ══════════════ APP PRINCIPAL ══════════════ -->
+<div id="main-app" class="hidden">
+
+<!-- Barra de sesión -->
+<div id="user-bar">
+  <span id="user-email-display"></span>
+  <button class="btn-bar admin hidden" id="btn-admin-toggle" onclick="toggleAdmin()">⚙️ Administración</button>
+  <button class="btn-bar" onclick="doLogout()">Cerrar sesión</button>
+</div>
+
+<!-- Panel de administración (solo admin) -->
+<section id="admin-section" class="hidden">
+  <h2>⚙️ Administración de Usuarios</h2>
+  <div class="admin-body">
+    <div class="admin-add-form">
+      <div>
+        <label for="new-email">Email del nuevo usuario</label>
+        <input type="email" id="new-email" placeholder="usuario@estudio.com">
+      </div>
+      <div>
+        <label for="new-pass">Contraseña inicial (mín. 6 caracteres)</label>
+        <input type="password" id="new-pass" placeholder="••••••••">
+      </div>
+      <button id="btn-add-user" onclick="addUser()">➕ Crear usuario</button>
+      <div id="admin-msg"></div>
+    </div>
+    <div id="users-loading">Cargando usuarios…</div>
+    <table class="users-table hidden" id="users-table">
+      <thead>
+        <tr><th>Email</th><th>Creado</th><th>Último acceso</th><th></th></tr>
+      </thead>
+      <tbody id="users-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
 <!-- ══════════════ CABECERA ══════════════ -->
 <div id="app-header">
   <h1>🧾 Generador de Recibos de Sueldo</h1>
@@ -437,6 +626,7 @@ input[type="file"] { display: none; }
 <!-- ══════════════ FASE 4: RECIBOS (target de impresión) ══════════════ -->
 <div id="receipts-container" class="hidden"></div>
 
+</div><!-- /main-app -->
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -494,6 +684,232 @@ const FLAGS_ARCA = {
 };
 
 const CATS_REMUNERATIVAS = new Set(['110000', '160001', '170001']);
+
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE AUTH
+// ═══════════════════════════════════════════════════════════════
+let sb            = null; // Supabase client
+let currentSession = null;
+let isAdmin        = false;
+
+async function initApp() {
+  // Cargar config pública desde el servidor
+  let config;
+  try {
+    const r = await fetch('/api/config');
+    if (!r.ok) throw new Error();
+    config = await r.json();
+  } catch {
+    document.body.innerHTML = '<p style="padding:40px;color:red">Error de configuración del servidor. Contactá al administrador.</p>';
+    return;
+  }
+
+  // Inicializar Supabase
+  const { createClient } = supabase; // global del CDN
+  sb = createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+  // Verificar sesión existente
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    onLogin(session);
+  } else {
+    mostrar('login-screen');
+  }
+
+  // Escuchar cambios de auth
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN')  onLogin(session);
+    if (event === 'SIGNED_OUT') onLogout();
+  });
+}
+
+function onLogin(session) {
+  currentSession = session;
+  esconder('login-screen');
+  mostrar('main-app');
+  document.getElementById('user-email-display').textContent = session.user.email;
+
+  // Verificar si es admin intentando cargar la lista de usuarios
+  checkAdminStatus();
+}
+
+function onLogout() {
+  currentSession = null;
+  isAdmin = false;
+  esconder('main-app');
+  esconder('admin-section');
+  document.getElementById('btn-admin-toggle').classList.add('hidden');
+  mostrar('login-screen');
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-password').value = '';
+  resetear();
+}
+
+async function checkAdminStatus() {
+  try {
+    const r = await fetch('/api/admin/users', { headers: authHeaders() });
+    isAdmin = r.status === 200;
+  } catch {
+    isAdmin = false;
+  }
+  if (isAdmin) {
+    document.getElementById('btn-admin-toggle').classList.remove('hidden');
+  }
+}
+
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('btn-login');
+
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Completá email y contraseña.'; return; }
+
+  btn.disabled   = true;
+  btn.innerHTML  = '<span id="login-spinner"></span>Ingresando…';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+
+  btn.disabled  = false;
+  btn.innerHTML = 'Iniciar sesión';
+
+  if (error) {
+    errEl.textContent = error.message.includes('Invalid login')
+      ? 'Email o contraseña incorrectos.'
+      : error.message;
+  }
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+}
+
+function authHeaders() {
+  const token = currentSession?.access_token;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PANEL DE ADMINISTRACIÓN
+// ═══════════════════════════════════════════════════════════════
+let adminOpen = false;
+
+function toggleAdmin() {
+  adminOpen = !adminOpen;
+  if (adminOpen) {
+    mostrar('admin-section');
+    loadUsers();
+  } else {
+    esconder('admin-section');
+  }
+}
+
+async function loadUsers() {
+  const loadEl = document.getElementById('users-loading');
+  const table  = document.getElementById('users-table');
+  const tbody  = document.getElementById('users-tbody');
+
+  loadEl.textContent = 'Cargando usuarios…';
+  loadEl.classList.remove('hidden');
+  table.classList.add('hidden');
+
+  try {
+    const r = await fetch('/api/admin/users', { headers: authHeaders() });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+
+    tbody.innerHTML = '';
+    (d.users || [])
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .forEach(u => {
+        const isMe = u.email === currentSession?.user?.email;
+        const tr   = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            ${h(u.email)}
+            ${isMe ? '<span class="admin-badge">VOS</span>' : ''}
+          </td>
+          <td>${formatDate(u.created_at)}</td>
+          <td>${u.last_sign_in_at ? formatDate(u.last_sign_in_at) : '—'}</td>
+          <td>
+            <button class="btn-del" ${isMe ? 'disabled title="No podés eliminar tu propio usuario"' : ''}
+              onclick="deleteUser('${u.id}','${h(u.email)}',this)">
+              Eliminar
+            </button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+
+    loadEl.classList.add('hidden');
+    table.classList.remove('hidden');
+  } catch (err) {
+    loadEl.textContent = '❌ Error: ' + err.message;
+  }
+}
+
+async function addUser() {
+  const email = document.getElementById('new-email').value.trim();
+  const pass  = document.getElementById('new-pass').value;
+  const msg   = document.getElementById('admin-msg');
+  const btn   = document.getElementById('btn-add-user');
+
+  msg.textContent = ''; msg.className = '';
+  if (!email || !pass) { msg.textContent = 'Completá email y contraseña.'; msg.className = 'err'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Creando…';
+
+  try {
+    const r = await fetch('/api/admin/users', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body:    JSON.stringify({ email, password: pass }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+
+    msg.textContent = `✅ Usuario ${email} creado correctamente.`;
+    msg.className   = 'ok';
+    document.getElementById('new-email').value = '';
+    document.getElementById('new-pass').value  = '';
+    loadUsers(); // refrescar lista
+  } catch (err) {
+    msg.textContent = '❌ ' + err.message;
+    msg.className   = 'err';
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '➕ Crear usuario';
+  }
+}
+
+async function deleteUser(id, email, btn) {
+  if (!confirm(`¿Confirmás eliminar al usuario ${email}?\n\nEsta acción no se puede deshacer.`)) return;
+
+  btn.disabled    = true;
+  btn.textContent = '…';
+
+  try {
+    const r = await fetch(`/api/admin/users?id=${encodeURIComponent(id)}&email=${encodeURIComponent(email)}`, {
+      method:  'DELETE',
+      headers: authHeaders(),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    loadUsers();
+  } catch (err) {
+    alert('Error al eliminar: ' + err.message);
+    btn.disabled    = false;
+    btn.textContent = 'Eliminar';
+  }
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' })
+    + ' ' + d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+}
 
 // ═══════════════════════════════════════════════════════════════
 // ESTADO
@@ -561,7 +977,7 @@ async function procesarTodo() {
   try {
     const resp = await fetch(apiUrl, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body:    JSON.stringify(payload),
       signal:  ctrl.signal,
     });
@@ -946,6 +1362,9 @@ function resetear() {
   document.getElementById('preview-toggle').textContent = '▼ Mostrar preview de recibos';
   previewVisible = false;
 }
+
+// Arrancar la app al cargar la página
+window.addEventListener('DOMContentLoaded', initApp);
 </script>
 </body>
 </html>

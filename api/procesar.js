@@ -1,4 +1,5 @@
-import OpenAI from 'openai';
+import OpenAI    from 'openai';
+import { jwtVerify } from 'jose';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DATOS FIJOS DE LA INSTITUCIÓN
@@ -52,6 +53,22 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Método no permitido' });
+
+  // ── Verificación de sesión ──────────────────────────────────────────────────
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  if (!token) {
+    return res.status(401).json({ error: 'Sesión requerida. Por favor iniciá sesión.' });
+  }
+  if (!process.env.SUPABASE_JWT_SECRET) {
+    return res.status(500).json({ error: 'Configuración del servidor incompleta (SUPABASE_JWT_SECRET)' });
+  }
+  try {
+    const secret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
+    await jwtVerify(token, secret, { algorithms: ['HS256'] });
+  } catch {
+    return res.status(401).json({ error: 'Sesión inválida o expirada. Por favor iniciá sesión nuevamente.' });
+  }
+  // ───────────────────────────────────────────────────────────────────────────
 
   const { utedyc, porteros, maestros } = req.body || {};
 

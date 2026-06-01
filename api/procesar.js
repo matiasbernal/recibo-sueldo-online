@@ -1,4 +1,4 @@
-import OpenAI    from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,12 +34,12 @@ const CATEGORIA_ARCA = {
 const CATS_REMUNERATIVAS = new Set(['110000', '160001', '170001']);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// OPENAI (singleton lazy)
+// GEMINI (singleton lazy)
 // ─────────────────────────────────────────────────────────────────────────────
-let _openai;
-const getOpenAI = () => {
-  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  return _openai;
+let _genai;
+const getGenAI = () => {
+  if (!_genai) _genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  return _genai;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,24 +108,24 @@ export default async function handler(req, res) {
 // LLAMADA A OPENAI
 // ─────────────────────────────────────────────────────────────────────────────
 async function procesarCSV(tipo, csvText) {
-  const ai = getOpenAI();
-
-  const completion = await ai.chat.completions.create({
-    model:           'gpt-4o-mini',
-    temperature:     0,
-    response_format: { type: 'json_object' },
-    max_tokens:      4096,
-    messages: [
-      { role: 'system', content: buildSystemPrompt(tipo) },
-      { role: 'user',   content: `Datos del CSV ${tipo.toUpperCase()}:\n\n${csvText}` },
-    ],
+  const model = getGenAI().getGenerativeModel({
+    model: 'gemini-1.5-flash',
+    systemInstruction: buildSystemPrompt(tipo),
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature:      0,
+    },
   });
+
+  const result = await model.generateContent(
+    `Datos del CSV ${tipo.toUpperCase()}:\n\n${csvText}`
+  );
 
   let data;
   try {
-    data = JSON.parse(completion.choices[0].message.content);
+    data = JSON.parse(result.response.text());
   } catch {
-    throw new Error(`La IA devolvió JSON inválido para el CSV de tipo "${tipo}"`);
+    throw new Error(`Gemini devolvió JSON inválido para el CSV de tipo "${tipo}"`);
   }
 
   return (data.empleados || []).map(emp => ({ ...emp, tipo }));

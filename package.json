@@ -4,7 +4,7 @@
   "private": true,
   "description": "Generador de recibos de sueldo y archivos ARCA/AFIP para A.C.D.P.S DYPS",
   "dependencies": {
-    "openai": "^4.0.0",
+    "@google/generative-ai": "^0.21.0",
     "jose": "^5.0.0"
   }
 }

@@ -109,7 +109,7 @@ export default async function handler(req, res) {
 // ─────────────────────────────────────────────────────────────────────────────
 async function procesarCSV(tipo, csvText) {
   const model = getGenAI().getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3.5-flash',
     systemInstruction: buildSystemPrompt(tipo),
     generationConfig: {
       responseMimeType: 'application/json',
